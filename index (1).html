@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network test | Marine Discovery Centre 3D</title>
+
+<!--
+  ==========================================================================
+  NETWORK TEST PAGE
+  ABM visual, July 2026
+  ==========================================================================
+  Deliberately plain. No animation, no branding, no annotations. Its only
+  jobs are to prove the school network can load a self hosted 3D model, and
+  to show the basic viewer behaviour.
+
+  Assets are shared with the main viewer one level up, so nothing is
+  duplicated:
+      ../model-viewer.min.js
+      ../dolphin-vertebra.glb
+  ==========================================================================
+-->
+
+<script type="module" src="../model-viewer.min.js"></script>
+
+<style>
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:#8f9295; color:#1b1e20;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  body{ display:flex; flex-direction:column; }
+
+  header{
+    flex:0 0 auto; padding:14px 20px;
+    background:#f4f4f3; border-bottom:1px solid #c6c8c9;
+  }
+  header h1{
+    margin:0 0 3px; font-size:15px; font-weight:650; letter-spacing:-.01em;
+  }
+  header p{ margin:0; font-size:13px; line-height:1.4; color:#4a4f52; }
+  header strong{ color:#1b1e20; }
+
+  main{ flex:1 1 auto; position:relative; min-height:0; }
+
+  model-viewer{
+    width:100%; height:100%;
+    background:#8f9295;      /* plain grey, no gradient */
+    --progress-bar-color:#2f6f7c;
+    --progress-mask:transparent;
+    --poster-color:transparent;
+  }
+
+  /* ---- network check card, open on load ---- */
+  .check{
+    position:absolute; top:14px; right:14px;
+    width:min(320px, calc(100% - 28px));
+    background:#fff; border:1px solid #c6c8c9; border-radius:4px;
+    box-shadow:0 2px 12px rgba(0,0,0,.18);
+    padding:14px 16px 15px;
+  }
+  .check h2{
+    margin:0 0 11px; padding-bottom:8px;
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:#2f6f7c; font-weight:700; border-bottom:1px solid #e2e4e5;
+  }
+  .row{
+    display:flex; align-items:center; font-size:13px;
+    padding:6px 0; border-bottom:1px solid #f0f1f2;
+  }
+  .row:last-of-type{ border-bottom:none; }
+  .row .name{ color:#33383b; }
+  .row .res{
+    margin-left:auto; font-size:10px; font-weight:800;
+    letter-spacing:.09em; text-transform:uppercase;
+  }
+  .res[data-s="wait"]{ color:#8a6d1f; }
+  .res[data-s="pass"]{ color:#1d7a4f; }
+  .res[data-s="fail"]{ color:#b23b2b; }
+  .note{
+    margin:11px 0 0; padding-top:10px; border-top:1px solid #e2e4e5;
+    font-size:12px; line-height:1.45; color:#5a5f62;
+  }
+
+  .controls{
+    position:absolute; left:14px; bottom:14px;
+    background:rgba(255,255,255,.93); border:1px solid #c6c8c9;
+    border-radius:4px; padding:10px 13px;
+    font-size:12.5px; line-height:1.5; color:#33383b;
+  }
+  .controls b{
+    display:block; font-size:9.5px; letter-spacing:.15em;
+    text-transform:uppercase; color:#2f6f7c; margin-bottom:4px;
+  }
+
+  @media (max-width:620px){
+    .check{ position:static; width:auto; margin:12px; box-shadow:none; }
+    main{ overflow-y:auto; }
+    model-viewer{ height:58vh; }
+    .controls{ position:static; margin:0 12px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Marine Discovery Centre 3D &mdash; network test</h1>
+  <p>Please open this page on a machine the students use, then
+     <strong>screenshot this whole window</strong> and send it back to us.
+     The bone below should turn when you drag it.</p>
+</header>
+
+<main>
+  <model-viewer
+      id="mv"
+      src="../dolphin-vertebra.glb"
+      alt="A dolphin vertebra shown as a rotatable 3D model, for testing purposes"
+      camera-controls
+      touch-action="none"
+      interaction-prompt="none"
+      camera-orbit="35deg 74deg 1.9m"
+      camera-target="0m 0.45m 0m"
+      min-camera-orbit="auto auto 1.05m"
+      max-camera-orbit="auto auto 3.4m"
+      environment-image="neutral"
+      exposure="1.0"
+      shadow-intensity="0.6"
+      loading="eager">
+  </model-viewer>
+
+  <div class="check">
+    <h2>Network check</h2>
+    <div class="row"><span class="name">This page</span><span class="res" data-s="pass">Pass</span></div>
+    <div class="row"><span class="name">3D viewer software</span><span class="res" data-s="wait" id="r1">Testing</span></div>
+    <div class="row"><span class="name">3D model file</span><span class="res" data-s="wait" id="r2">Testing</span></div>
+    <div class="row"><span class="name">poly.cam</span><span class="res" data-s="wait" id="r3">Testing</span></div>
+    <p class="note">The top three need to say <strong>Pass</strong>.
+       The <strong>poly.cam</strong> row is expected to say Blocked on the
+       school network. That is the fault we are working around.</p>
+  </div>
+
+  <div class="controls">
+    <b>Controls</b>
+    Drag to rotate &nbsp;&middot;&nbsp; pinch or scroll to zoom
+  </div>
+</main>
+
+<script>
+  const mv = document.getElementById('mv');
+  const setRes = (id, ok) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.dataset.s = ok ? 'pass' : 'fail';
+    el.textContent = ok ? 'Pass' : 'Blocked';
+  };
+
+  const checkViewer = () => setRes('r1', !!customElements.get('model-viewer'));
+  customElements.get('model-viewer') ? checkViewer()
+    : customElements.whenDefined('model-viewer').then(checkViewer);
+  setTimeout(checkViewer, 8000);
+
+  mv.addEventListener('load',  () => setRes('r2', true));
+  mv.addEventListener('error', () => setRes('r2', false));
+
+  (async () => {
+    const ctrl = new AbortController();
+    const bail = setTimeout(() => ctrl.abort(), 7000);
+    try {
+      await fetch('https://poly.cam/', { mode:'no-cors', cache:'no-store', signal:ctrl.signal });
+      clearTimeout(bail); setRes('r3', true);
+    } catch (_) { clearTimeout(bail); setRes('r3', false); }
+  })();
+</script>
+
+</body>
+</html>
