@@ -52,10 +52,11 @@
 
   .status{
     position:fixed; top:36px; left:36px;
-    display:flex; flex-direction:column; gap:9px;
+    display:flex; flex-direction:column; gap:14px;
   }
-  .line{
-    display:flex; align-items:baseline; gap:34px;
+  .line{ display:flex; flex-direction:column; gap:2px; }
+  .line .row{
+    display:inline-flex; align-items:baseline; gap:34px;
     font-size:14px; letter-spacing:.04em;
   }
   .line .label{ color:#fff; white-space:nowrap; }
@@ -63,10 +64,12 @@
   .state[data-s="wait"]{ color:var(--wait); }
   .state[data-s="pass"]{ color:var(--pass); }
   .state[data-s="fail"]{ color:var(--fail); }
+  .desc{ font-size:11px; letter-spacing:.02em; color:#6e7681; }
 
   @media (max-width:520px){
     .status{ top:22px; left:20px; }
-    .line{ gap:22px; font-size:13px; }
+    .line .label{ gap:22px; font-size:13px; }
+    .desc{ font-size:10px; }
   }
 </style>
 </head>
@@ -75,7 +78,7 @@
 <model-viewer
     id="mv"
     src="dolphin-vertebra.glb"
-    alt="A dolphin vertebra, rendered as a static diagnostic image"
+    alt="A dolphin vertebra, rendered as an interactive diagnostic model"
     camera-orbit="42deg 78deg 1.75m"
     camera-target="0m 0.45m 0m"
     field-of-view="30deg"
@@ -83,16 +86,32 @@
     exposure="1.35"
     shadow-intensity="1.15"
     shadow-softness="0.28"
+    camera-controls
+    touch-action="none"
     interaction-prompt="none"
-    disable-zoom
+    auto-rotate
+    auto-rotate-delay="0"
+    rotation-per-second="24deg"
     loading="eager">
 </model-viewer>
 
 <div class="status" id="status">
-  <div class="line"><span class="label">GITHUB PAGES</span><span class="state" data-s="pass">PASS</span></div>
-  <div class="line"><span class="label">GITHUB CONNECTION</span><span class="state" data-s="wait" id="rConn">TESTING</span></div>
-  <div class="line"><span class="label">3D VIEWER</span><span class="state" data-s="wait" id="rViewer">TESTING</span></div>
-  <div class="line"><span class="label">3D GRAPHICS (WEBGL)</span><span class="state" data-s="wait" id="rGl">TESTING</span></div>
+  <div class="line">
+    <span class="row"><span class="label">LOCAL NETWORK</span><span class="state" data-s="pass">PASS</span></span>
+    <span class="desc">this page reached your browser at all</span>
+  </div>
+  <div class="line">
+    <span class="row"><span class="label">GITHUB CONNECTION</span><span class="state" data-s="wait" id="rConn">TESTING</span></span>
+    <span class="desc">the 3D model file downloaded from GitHub</span>
+  </div>
+  <div class="line">
+    <span class="row"><span class="label">3D VIEWER</span><span class="state" data-s="wait" id="rViewer">TESTING</span></span>
+    <span class="desc">the software that renders 3D models loaded</span>
+  </div>
+  <div class="line">
+    <span class="row"><span class="label">3D GRAPHICS (WEBGL)</span><span class="state" data-s="wait" id="rGl">TESTING</span></span>
+    <span class="desc">this device's graphics support, not the network</span>
+  </div>
 </div>
 
 <script>

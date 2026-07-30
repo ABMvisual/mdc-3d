@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marker annotator — MDC 3D</title>
+
+<!--
+  ==========================================================================
+  MARKER ANNOTATOR
+  ABM visual, July 2026
+  ==========================================================================
+  Internal tool, not for the public site. Drop a .glb in, click the surface
+  to drop numbered markers (uses model-viewer's own
+  positionAndNormalFromPoint, the same method the official modelviewer.dev
+  editor uses), write the text for each, then copy the generated code
+  straight into a duplicated specimen page.
+
+  Self-hosted model-viewer, same file already in this repo.
+  Nothing here talks to poly.cam or anywhere else.
+  ==========================================================================
+-->
+
+<script type="module" src="model-viewer.min.js"></script>
+
+<style>
+  :root{
+    --ink:#08191f; --ink2:#0f2b34; --teal:#4fb3c4; --teal-dim:#2d6b77;
+    --shell:#f2e9dc; --sand:#c9b79c; --rule:rgba(242,233,220,.16);
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:var(--ink); color:var(--shell);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+  body{ display:grid; grid-template-columns:1fr 380px; height:100%; }
+  @media (max-width:860px){ body{ grid-template-columns:1fr; grid-template-rows:55vh 1fr; } }
+
+  /* ---------------- stage ---------------- */
+  .stage{ position:relative; background:#000; overflow:hidden; }
+  model-viewer{ width:100%; height:100%; background:radial-gradient(ellipse 70% 55% at 50% 42%,#123340 0%,var(--ink) 70%);
+    --progress-bar-color:var(--teal); --poster-color:transparent; }
+
+  .drop{
+    position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+    background:var(--ink); z-index:5; cursor:pointer; padding:20px;
+  }
+  .drop.hide{ display:none; }
+  .drop.over{ outline:2px dashed var(--teal); outline-offset:-14px; }
+  .drop p{ margin:0 0 6px; font-size:15px; color:var(--shell); }
+  .drop small{ color:var(--sand); font-size:12.5px; }
+  .drop input{ display:none; }
+
+  .toolbar{
+    position:absolute; top:14px; left:14px; right:14px;
+    display:flex; gap:8px; align-items:center; z-index:4;
+  }
+  .btn{
+    background:rgba(8,25,31,.85); color:var(--shell); border:1px solid var(--rule);
+    border-radius:100px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; padding:9px 15px; cursor:pointer; font-family:inherit; white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--teal); color:var(--teal); }
+  .btn[data-active]{ background:var(--teal); color:var(--ink); border-color:var(--teal); }
+  .btn[disabled]{ opacity:.4; cursor:default; pointer-events:none; }
+  .spacer{ flex:1; }
+  .filename{ font-size:11.5px; color:var(--sand); font-family:var(--mono); }
+
+  .pin{
+    width:32px; height:32px; display:grid; place-items:center; border-radius:50%;
+    background:var(--teal); color:var(--ink); font-size:13px; font-weight:800;
+    border:2.5px solid var(--ink); box-shadow:0 2px 8px rgba(0,0,0,.5);
+    cursor:pointer; font-family:inherit;
+  }
+  .pin[data-visibility="hidden"]{ opacity:0; pointer-events:none; }
+
+  .hint{
+    position:absolute; bottom:14px; left:14px; right:14px; z-index:4;
+    background:rgba(8,25,31,.85); border:1px solid var(--rule); border-radius:4px;
+    padding:9px 13px; font-size:12px; line-height:1.4; color:var(--sand);
+  }
+  .hint b{ color:var(--teal); }
+
+  /* ---------------- sidebar ---------------- */
+  .side{ background:var(--ink2); display:flex; flex-direction:column; min-height:0; border-left:1px solid var(--rule); }
+  .side-head{ padding:16px 18px 14px; border-bottom:1px solid var(--rule); }
+  .side-head h1{ margin:0 0 4px; font-size:15px; font-weight:700; }
+  .side-head p{ margin:0; font-size:12px; line-height:1.4; color:var(--sand); }
+
+  .list{ flex:1 1 auto; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .empty{ margin:20px 14px; font-size:12.5px; color:var(--sand); line-height:1.5; }
+
+  .card{ background:rgba(8,25,31,.55); border:1px solid var(--rule); border-radius:4px; padding:11px 12px; }
+  .card-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .card-num{
+    width:22px; height:22px; flex:0 0 22px; display:grid; place-items:center;
+    border-radius:50%; background:var(--teal); color:var(--ink); font-size:11px; font-weight:800;
+  }
+  .card input[type=text]{
+    width:100%; background:rgba(255,255,255,.04); border:1px solid var(--rule); border-radius:3px;
+    color:var(--shell); font-size:13px; padding:6px 8px; font-family:inherit;
+  }
+  .card textarea{
+    width:100%; background:rgba(255,255,255,.04); border:1px solid var(--rule); border-radius:3px;
+    color:var(--shell); font-size:12.5px; line-height:1.4; padding:7px 8px; font-family:inherit;
+    resize:vertical; min-height:52px;
+  }
+  .card input:focus, .card textarea:focus{ outline:none; border-color:var(--teal); }
+  .card-actions{ display:flex; gap:6px; margin-left:auto; }
+  .icon-btn{
+    background:none; border:none; color:var(--sand); cursor:pointer; font-size:13px;
+    padding:2px 5px; font-family:inherit;
+  }
+  .icon-btn:hover{ color:var(--teal); }
+  .coord{ margin-top:6px; font-size:10px; color:var(--teal-dim); font-family:var(--mono); word-break:break-all; }
+
+  .export{ border-top:1px solid var(--rule); padding:13px 14px 15px; }
+  .export-head{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .export-head span{ font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--teal); font-weight:700; }
+  .export textarea{
+    width:100%; height:150px; background:#000; border:1px solid var(--rule); border-radius:3px;
+    color:#9fe6b0; font-family:var(--mono); font-size:10.5px; line-height:1.5; padding:9px;
+    resize:vertical;
+  }
+  .copybtn{
+    margin-top:8px; width:100%; background:var(--teal); color:var(--ink); border:none;
+    border-radius:3px; padding:9px; font-size:11.5px; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; cursor:pointer; font-family:inherit;
+  }
+  .copybtn:hover{ background:var(--shell); }
+  .copybtn[data-done]{ background:#6ec5a0; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <model-viewer id="mv" camera-controls touch-action="none"
+      camera-orbit="35deg 74deg 1.9m" environment-image="neutral"
+      exposure="1.05" shadow-intensity="0.9" shadow-softness="0.85"></model-viewer>
+
+  <div class="toolbar">
+    <button class="btn" id="markBtn" disabled>Add marker: off</button>
+    <button class="btn" id="loadBtn">Load .glb</button>
+    <div class="spacer"></div>
+    <span class="filename" id="fname"></span>
+  </div>
+
+  <div class="hint" id="hint">
+    Toggle <b>Add marker</b>, then click anywhere on the model to drop a numbered
+    marker there. Rotate and zoom work as normal when it's off.
+  </div>
+
+  <div class="drop" id="drop">
+    <div>
+      <p>Drop a .glb file here, or click to browse</p>
+      <small>Nothing leaves your browser — the file is read locally.</small>
+      <input type="file" id="fileInput" accept=".glb,model/gltf-binary">
+    </div>
+  </div>
+</div>
+
+<div class="side">
+  <div class="side-head">
+    <h1>Markers</h1>
+    <p>Click a spot on the model to add one. Fill in the heading and text for
+       each, then copy the code below into a new specimen page.</p>
+  </div>
+
+  <div class="list" id="list">
+    <p class="empty">No markers yet. Load a model and turn on <b>Add marker</b>.</p>
+  </div>
+
+  <div class="export">
+    <div class="export-head"><span>Export</span></div>
+    <textarea id="out" readonly placeholder="Add at least one marker to see code here."></textarea>
+    <button class="copybtn" id="copyBtn">Copy code</button>
+  </div>
+</div>
+
+<script>
+  const mv        = document.getElementById('mv');
+  const drop       = document.getElementById('drop');
+  const fileInput  = document.getElementById('fileInput');
+  const loadBtn    = document.getElementById('loadBtn');
+  const markBtn    = document.getElementById('markBtn');
+  const fnameEl    = document.getElementById('fname');
+  const listEl     = document.getElementById('list');
+  const outEl      = document.getElementById('out');
+  const copyBtn    = document.getElementById('copyBtn');
+
+  let markers = [];       // { position, normal, head, text }
+  let markMode = false;
+  let modelLoaded = false;
+
+  /* ---------------- loading a model ---------------- */
+  function loadFile(file){
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    mv.src = url;
+    fnameEl.textContent = file.name;
+    modelLoaded = true;
+    markBtn.disabled = false;
+    drop.classList.add('hide');
+    markers = [];
+    render();
+  }
+
+  drop.addEventListener('click', () => fileInput.click());
+  loadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.add('over');
+  }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.remove('over');
+  }));
+  drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+  // also allow dropping a new model straight onto the stage after one is loaded
+  document.querySelector('.stage').addEventListener('dragover', e => e.preventDefault());
+  document.querySelector('.stage').addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+
+  /* ---------------- marker placement ---------------- */
+  markBtn.addEventListener('click', () => {
+    markMode = !markMode;
+    markBtn.textContent = `Add marker: ${markMode ? 'on' : 'off'}`;
+    markBtn.toggleAttribute('data-active', markMode);
+    mv.style.cursor = markMode ? 'crosshair' : '';
+  });
+
+  let downX = 0, downY = 0;
+  mv.addEventListener('pointerdown', e => { downX = e.clientX; downY = e.clientY; });
+  mv.addEventListener('pointerup', e => {
+    if (!markMode || !modelLoaded) return;
+    // ignore this as a placement if it was actually a drag (camera orbit)
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
+
+    const rect = mv.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const hit = mv.positionAndNormalFromPoint(x, y);
+    if (!hit) return;
+
+    markers.push({
+      position: roundVec(hit.position.toString()),
+      normal: roundVec(hit.normal.toString()),
+      head: '', text: ''
+    });
+    render();
+  });
+
+  // model-viewer returns each component individually suffixed, e.g.
+  // "0.0294297109965m 0.512454530838m 0.036223018705m" - round for
+  // readability while keeping the unit suffix, which is valid syntax
+  // and matches what positionAndNormalFromPoint documents as correct.
+  function roundVec(str){
+    return str.replace(/(-?\d+\.?\d*)(m)/g, (_, num, unit) =>
+      `${parseFloat(num).toFixed(4)}${unit}`);
+  }
+
+  /* ---------------- rebuild hotspots, list, export ---------------- */
+  function render(){
+    // clear existing hotspot buttons
+    mv.querySelectorAll('button[slot^="hotspot-"]').forEach(b => b.remove());
+
+    markers.forEach((m, i) => {
+      const n = i + 1;
+      const btn = document.createElement('button');
+      btn.className = 'pin';
+      btn.slot = `hotspot-${n}`;
+      btn.dataset.position = m.position;
+      btn.dataset.normal = m.normal;
+      btn.dataset.visibilityAttribute = 'visibility';
+      btn.textContent = n;
+      btn.title = m.head || `Marker ${n}`;
+      mv.appendChild(btn);
+    });
+
+    // sidebar cards
+    if (markers.length === 0) {
+      listEl.innerHTML = '<p class="empty">No markers yet. Load a model and turn on <b>Add marker</b>.</p>';
+    } else {
+      listEl.innerHTML = '';
+      markers.forEach((m, i) => {
+        const n = i + 1;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-row">
+            <div class="card-num">${n}</div>
+            <input type="text" data-field="head" placeholder="Heading, e.g. Neural spine" value="${escAttr(m.head)}">
+            <div class="card-actions">
+              ${i>0 ? '<button class="icon-btn" data-act="up" title="Move up">&uarr;</button>' : ''}
+              ${i<markers.length-1 ? '<button class="icon-btn" data-act="down" title="Move down">&darr;</button>' : ''}
+              <button class="icon-btn" data-act="del" title="Delete">&times;</button>
+            </div>
+          </div>
+          <textarea data-field="text" placeholder="What this part is, in plain language">${escHtml(m.text)}</textarea>
+          <div class="coord">pos ${m.position} &nbsp; norm ${m.normal}</div>
+        `;
+        card.querySelector('[data-field="head"]').addEventListener('input', e => { m.head = e.target.value; updateExport(); });
+        card.querySelector('[data-field="text"]').addEventListener('input', e => { m.text = e.target.value; updateExport(); });
+        card.querySelector('[data-act="del"]').addEventListener('click', () => { markers.splice(i,1); render(); });
+        const up = card.querySelector('[data-act="up"]');
+        const down = card.querySelector('[data-act="down"]');
+        if (up) up.addEventListener('click', () => { [markers[i-1],markers[i]]=[markers[i],markers[i-1]]; render(); });
+        if (down) down.addEventListener('click', () => { [markers[i+1],markers[i]]=[markers[i],markers[i+1]]; render(); });
+        listEl.appendChild(card);
+      });
+    }
+
+    updateExport();
+  }
+
+  function escHtml(s){ return (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function escAttr(s){ return escHtml(s).replace(/"/g,'&quot;'); }
+  function escJs(s){ return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
+
+  function updateExport(){
+    if (markers.length === 0) { outEl.value = ''; return; }
+
+    const chips = markers.map((m,i) =>
+      `      <button class="chip" data-key="${i+1}" aria-pressed="false" aria-label="Marker ${i+1}">${i+1}</button>`
+    ).join('\n');
+
+    const hotspots = markers.map((m,i) => {
+      const n = i+1;
+      return `  <button class="pin" slot="hotspot-${n}" data-key="${n}"\n` +
+             `          data-position="${m.position}" data-normal="${m.normal}"\n` +
+             `          data-visibility-attribute="visibility" aria-label="Marker ${n}, ${escAttr(m.head)||''}">${n}</button>`;
+    }).join('\n\n');
+
+    const content = markers.map((m,i) =>
+      `    ${i+1}: { head:'${escJs(m.head)}',\n         text:'${escJs(m.text)}' },`
+    ).join('\n');
+
+    outEl.value =
+`/* ---- picker chips: paste inside the .picker div, after the i button ---- */
+${chips}
+
+/* ---- hotspot buttons: paste inside <model-viewer>, replacing the old set ---- */
+${hotspots}
+
+/* ---- CONTENT entries: paste inside the CONTENT object, alongside i: {...} ---- */
+${content}`;
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    if (!outEl.value) return;
+    await navigator.clipboard.writeText(outEl.value);
+    copyBtn.textContent = 'Copied';
+    copyBtn.setAttribute('data-done','');
+    setTimeout(() => { copyBtn.textContent = 'Copy code'; copyBtn.removeAttribute('data-done'); }, 1400);
+  });
+
+  render();
+</script>
+
+</body>
+</html>
