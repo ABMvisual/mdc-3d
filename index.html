@@ -138,6 +138,16 @@
     background:var(--sand); border-color:var(--sand); color:var(--ink);
   }
 
+  .version{
+    position:absolute; top:14px; left:14px;
+    width:30px; height:30px; display:grid; place-items:center;
+    border-radius:50%; background:rgba(8,25,31,.8);
+    border:1.5px solid var(--rule); color:var(--sand);
+    font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+    cursor:default; user-select:none;
+  }
+  .version:hover{ border-color:var(--teal); color:var(--teal); }
+
   .hint{
     position:absolute; top:18px; left:50%; transform:translateX(-50%);
     font-size:11px; letter-spacing:.13em; text-transform:uppercase;
@@ -258,6 +268,8 @@
 
   <div class="hint">Drag to rotate</div>
 
+  <div class="version" id="ver" title="Build version">1</div>
+
   <!-- Markers are indicators only. Their text lives in CONTENT below, so it
        always appears in the panel and can never be clipped off screen. -->
   <button class="pin" slot="hotspot-1" data-key="1"
@@ -356,6 +368,9 @@
     3: { head:'Transverse process',
          text:'One of two long side arms. They braced the spine against twisting and gave more muscle attachment along the flanks.' }
   };
+
+  const BUILD = { version: 1, note: 'spin lock, camera framing, mouse+keyboard help' };
+  document.getElementById('ver').title = `Build v${BUILD.version} — ${BUILD.note}`;
 
   const mv    = document.getElementById('mv');
   const pins  = [...document.querySelectorAll('.pin')];
