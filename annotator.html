@@ -139,6 +139,7 @@
 
   <div class="toolbar">
     <button class="btn" id="markBtn" disabled>Add marker: off</button>
+    <button class="btn" id="viewBtn" disabled>Set opening view</button>
     <button class="btn" id="loadBtn">Load .glb</button>
     <div class="spacer"></div>
     <span class="filename" id="fname"></span>
@@ -146,7 +147,9 @@
 
   <div class="hint" id="hint">
     Toggle <b>Add marker</b>, then click anywhere on the model to drop a numbered
-    marker there. Rotate and zoom work as normal when it's off.
+    marker there. Rotate and zoom work as normal when it's off.<br>
+    Frame the specimen how it should first appear, then press <b>Set opening view</b>.
+    <span id="viewState" style="color:var(--sand);">No opening view saved yet.</span>
   </div>
 
   <div class="drop" id="drop">
@@ -199,6 +202,7 @@
     fnameEl.textContent = file.name;
     modelLoaded = true;
     markBtn.disabled = false;
+    viewBtn.disabled = false;
     drop.classList.add('hide');
     markers = [];
     render();
@@ -224,6 +228,28 @@
   });
 
   /* ---------------- marker placement ---------------- */
+  /* ---------------- opening view ----------------------------------
+     Captures exactly what the camera is doing right now, so whoever frames
+     the specimen decides how it first appears rather than it defaulting to
+     a generic angle. Stored as model-viewer's own camera-orbit / target /
+     field-of-view strings, which paste straight into the player. */
+  const viewBtn   = document.getElementById('viewBtn');
+  const viewState = document.getElementById('viewState');
+  let openingView = null;
+
+  viewBtn.addEventListener('click', () => {
+    const o = mv.getCameraOrbit(), t = mv.getCameraTarget();
+    const deg = r => (r * 180 / Math.PI).toFixed(1) + 'deg';
+    openingView = {
+      orbit:  `${deg(o.theta)} ${deg(o.phi)} ${o.radius.toFixed(3)}m`,
+      target: `${t.x.toFixed(3)}m ${t.y.toFixed(3)}m ${t.z.toFixed(3)}m`,
+      fov:    mv.getFieldOfView().toFixed(1) + 'deg'
+    };
+    viewState.textContent = 'Opening view saved: ' + openingView.orbit;
+    viewState.style.color = 'var(--teal)';
+    updateExport();
+  });
+
   markBtn.addEventListener('click', () => {
     markMode = !markMode;
     markBtn.textContent = `Add marker: ${markMode ? 'on' : 'off'}`;
@@ -319,7 +345,16 @@
   function escJs(s){ return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
 
   function updateExport(){
-    if (markers.length === 0) { outEl.value = ''; return; }
+    if (markers.length === 0 && !openingView) { outEl.value = ''; return; }
+
+    const viewBlock = openingView
+      ? `/* ---- opening view: replace these three attributes on <model-viewer> ---- */
+    camera-orbit="${openingView.orbit}"
+    camera-target="${openingView.target}"
+    field-of-view="${openingView.fov}"
+
+`
+      : '';
 
     const chips = markers.map((m,i) =>
       `      <button class="chip" data-key="${i+1}" aria-pressed="false" aria-label="Marker ${i+1}">${i+1}</button>`
@@ -336,7 +371,7 @@
       `    ${i+1}: { head:'${escJs(m.head)}',\n         text:'${escJs(m.text)}' },`
     ).join('\n');
 
-    outEl.value =
+    outEl.value = viewBlock +
 `/* ---- picker chips: paste inside the .picker div, after the i button ---- */
 ${chips}
 

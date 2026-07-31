@@ -134,10 +134,21 @@
   .pill:hover,.pill:focus-visible{ border-color:var(--teal); color:var(--teal); outline:none; }
   .pill[data-primary]{ border-color:rgba(79,179,196,.55); color:var(--teal); }
   /* teacher control: filled when the spin is being held off */
-  /* the active state of the Spin / Pause pair */
-  #spinOnBtn[aria-pressed="true"], #spinOffBtn[aria-pressed="true"]{
-    background:var(--teal); border-color:var(--teal); color:var(--ink);
+  /* segmented Spin | Pause: both states always visible, active half filled */
+  .seg{
+    display:inline-flex; border:1px solid var(--rule); border-radius:100px;
+    overflow:hidden; background:rgba(8,25,31,.8);
   }
+  .seg button{
+    appearance:none; border:0; cursor:pointer; font-family:inherit;
+    background:transparent; color:rgba(242,233,220,.6);
+    font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+    font-weight:700; padding:10px 17px; transition:background .15s ease, color .15s ease;
+  }
+  .seg button + button{ border-left:1px solid var(--rule); }
+  .seg button:hover{ color:var(--shell); }
+  .seg button[aria-pressed="true"]{ background:var(--teal); color:var(--ink); }
+  .seg button:focus-visible{ outline:none; box-shadow:inset 0 0 0 2px var(--teal); }
 
   .version{
     position:absolute; top:14px; left:14px;
@@ -194,6 +205,22 @@
     background:rgba(242,233,220,.1); border:1px solid var(--rule);
     border-radius:3px; padding:2px 6px; margin:0 1px; color:var(--shell);
   }
+  .uinote{ font-size:11.5px; color:var(--sand); line-height:1.45; margin:0 0 11px; }
+  .uirow{
+    display:flex; align-items:center; gap:10px;
+    font-size:13px; padding:6px 0;
+    border-bottom:1px solid rgba(242,233,220,.06);
+  }
+  .uirow:last-of-type{ border-bottom:none; }
+  .uirow .dot{
+    width:11px; height:11px; flex:0 0 11px; border-radius:50%;
+    background:transparent; border:1.5px solid rgba(242,233,220,.28);
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .uirow .lbl{ color:rgba(242,233,220,.45); transition:color .2s ease; }
+  .uirow[data-done] .dot{ background:#6ec5a0; border-color:#6ec5a0; }
+  .uirow[data-done] .lbl{ color:var(--shell); }
+
   .row{
     display:flex; align-items:center; gap:9px; font-size:12.5px;
     padding:5px 0; border-bottom:1px solid rgba(242,233,220,.06);
@@ -255,7 +282,7 @@
     camera-controls
     touch-action="none"
     auto-rotate
-    auto-rotate-delay="2600"
+    auto-rotate-delay="0"
     rotation-per-second="14deg"
     interaction-prompt="none"
     camera-orbit="35deg 74deg 1.9m"
@@ -312,9 +339,27 @@
 </model-viewer>
 
 <div class="bar">
-  <button class="pill" id="spinOnBtn"  aria-pressed="true">Spin</button>
-  <button class="pill" id="spinOffBtn" aria-pressed="false">Pause</button>
+  <div class="seg" role="group" aria-label="Rotation">
+    <button id="spinOnBtn"  aria-pressed="true">Spin</button>
+    <button id="spinOffBtn" aria-pressed="false">Pause</button>
+  </div>
   <button class="pill" id="helpBtn" data-primary>How to use</button>
+  <button class="pill" id="uiBtn">UI check</button>
+</div>
+
+<div class="panel" id="uicheck" role="dialog" aria-label="UI check">
+  <h2>UI check <button data-close aria-label="Close">&times;</button></h2>
+  <p class="uinote">Use each control once. Every item turns green as it is confirmed working.</p>
+  <div class="uirow" data-ui="info"><span class="dot"></span><span class="lbl">Info button (i)</span></div>
+  <div class="uirow" data-ui="m1"><span class="dot"></span><span class="lbl">Marker 1</span></div>
+  <div class="uirow" data-ui="m2"><span class="dot"></span><span class="lbl">Marker 2</span></div>
+  <div class="uirow" data-ui="m3"><span class="dot"></span><span class="lbl">Marker 3</span></div>
+  <div class="uirow" data-ui="spin"><span class="dot"></span><span class="lbl">Spin</span></div>
+  <div class="uirow" data-ui="pause"><span class="dot"></span><span class="lbl">Pause</span></div>
+  <div class="uirow" data-ui="recentre"><span class="dot"></span><span class="lbl">Recentre</span></div>
+  <div class="uirow" data-ui="rotate"><span class="dot"></span><span class="lbl">Drag to rotate</span></div>
+  <div class="uirow" data-ui="zoom"><span class="dot"></span><span class="lbl">Pinch or scroll to zoom</span></div>
+  <p class="foot" id="uiSummary">0 of 9 confirmed</p>
 </div>
 
 <div class="panel" id="help" role="dialog" aria-label="How to use">
@@ -326,6 +371,7 @@
   <div class="kv"><span class="k">Read a part</span><span class="v">Tap a numbered circle, on the bone or in the panel</span></div>
   <div class="kv"><span class="k">Back to the start</span><span class="v">Tap the <em>i</em> button in the panel</span></div>
   <div class="kv"><span class="k">Start / stop turning</span><span class="v">Tap <em>Spin</em> or <em>Pause</em> at the top right</span></div>
+  <div class="kv"><span class="k">Check the controls</span><span class="v">Tap <em>UI check</em> to confirm each control works</span></div>
   <div class="kv"><span class="k">Back to the opening view</span><span class="v">Tap <em>Recentre</em> at the top</span></div>
 
   <h3>Mouse</h3>
@@ -361,7 +407,7 @@
          text:'One of two long side arms. They braced the spine against twisting and gave more muscle attachment along the flanks.' }
   };
 
-  const BUILD = { version: 5, note: 'Recentre button, discrete Spin/Pause buttons, network check removed from viewer' };
+  const BUILD = { version: 6, note: 'segmented Spin|Pause toggle, rotation delay removed (was 2.6s), UI check panel added' };
   document.getElementById('ver').title = `Build v${BUILD.version} — ${BUILD.note}`;
   document.getElementById('ver').textContent = BUILD.version;
 
@@ -427,8 +473,11 @@
     spinAllowed = true;
     if (current !== 'i') select('i');   // a marker was holding it still
     else applySpin();
+    uiConfirm('spin');
   });
-  spinOffBtn.addEventListener('click', () => { spinAllowed = false; applySpin(); });
+  spinOffBtn.addEventListener('click', () => {
+    spinAllowed = false; applySpin(); uiConfirm('pause');
+  });
 
   /* ---------------- selection: chips, pins and panel in sync ------- */
   let current = 'i';
@@ -455,6 +504,7 @@
       if (pin) frameMarker(pin);
     }
     applySpin();
+    uiConfirm(key === 'i' ? 'info' : 'm' + key);
   }
 
   chips.forEach(c => c.addEventListener('click', () => select(c.dataset.key)));
@@ -464,16 +514,52 @@
   }));
 
   /* ---------------- side panels ----------------------------------- */
-  const help = document.getElementById('help');
-  const bar  = document.querySelector('.bar');
-  const show    = () => { help.setAttribute('data-open',''); bar.style.display='none'; };
-  const hideAll = () => { help.removeAttribute('data-open'); bar.style.display=''; };
-  document.getElementById('helpBtn').onclick = show;
+  const help    = document.getElementById('help');
+  const uicheck = document.getElementById('uicheck');
+  const bar     = document.querySelector('.bar');
+  const show = p => {
+    help.removeAttribute('data-open'); uicheck.removeAttribute('data-open');
+    p.setAttribute('data-open',''); bar.style.display='none';
+  };
+  const hideAll = () => {
+    help.removeAttribute('data-open'); uicheck.removeAttribute('data-open');
+    bar.style.display='';
+  };
+  document.getElementById('helpBtn').onclick = () => show(help);
+  document.getElementById('uiBtn').onclick   = () => show(uicheck);
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = hideAll);
+
+  /* ---------------- UI check --------------------------------------
+     Each control turns green the first time it is actually used, so the
+     panel records what has been verified rather than asserting it. */
+  const UI_TOTAL = 9;
+  const uiDone = new Set();
+  function uiConfirm(key){
+    if (uiDone.has(key)) return;
+    uiDone.add(key);
+    const row = uicheck.querySelector('.uirow[data-ui="' + key + '"]');
+    if (row) row.setAttribute('data-done','');
+    document.getElementById('uiSummary').textContent =
+      uiDone.size + ' of ' + UI_TOTAL + ' confirmed' +
+      (uiDone.size === UI_TOTAL ? ' \u2014 all controls working' : '');
+  }
+
+  /* drag vs zoom: a change in distance is a zoom, angle alone is a rotate */
+  let lastRadius = null;
+  mv.addEventListener('camera-change', e => {
+    if (e.detail.source !== 'user-interaction') return;
+    document.body.setAttribute('data-touched','');
+    const o = mv.getCameraOrbit();
+    if (lastRadius !== null && Math.abs(o.radius - lastRadius) > 0.02) uiConfirm('zoom');
+    else uiConfirm('rotate');
+    lastRadius = o.radius;
+  });
 
   /* ---------------- recentre ---------------------------------------
      Returns the camera to the opening framing and clears any selection. */
-  document.getElementById('recentreBtn').addEventListener('click', () => select('i'));
+  document.getElementById('recentreBtn').addEventListener('click', () => {
+    select('i'); uiConfirm('recentre');
+  });
 
   /* ---------------- keyboard --------------------------------------
      Written out explicitly so the on-screen list matches exactly. */
