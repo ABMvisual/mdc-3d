@@ -134,8 +134,9 @@
   .pill:hover,.pill:focus-visible{ border-color:var(--teal); color:var(--teal); outline:none; }
   .pill[data-primary]{ border-color:rgba(79,179,196,.55); color:var(--teal); }
   /* teacher control: filled when the spin is being held off */
-  #spinBtn[aria-pressed="true"]{
-    background:var(--sand); border-color:var(--sand); color:var(--ink);
+  /* the active state of the Spin / Pause pair */
+  #spinOnBtn[aria-pressed="true"], #spinOffBtn[aria-pressed="true"]{
+    background:var(--teal); border-color:var(--teal); color:var(--ink);
   }
 
   .version{
@@ -149,13 +150,14 @@
   .version:hover{ border-color:var(--teal); color:var(--teal); }
 
   .hint{
-    position:absolute; top:18px; left:50%; transform:translateX(-50%);
-    font-size:11px; letter-spacing:.13em; text-transform:uppercase;
-    color:rgba(242,233,220,.5); background:rgba(8,25,31,.7);
-    padding:7px 15px; border-radius:100px; border:1px solid var(--rule);
-    pointer-events:none; transition:opacity .5s ease;
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    font-family:inherit;
+    font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+    font-weight:600; color:var(--shell); background:rgba(8,25,31,.8);
+    padding:10px 18px; border-radius:100px; border:1px solid var(--rule);
+    cursor:pointer;
   }
-  body[data-touched] .hint{ opacity:0; }
+  .hint:hover, .hint:focus-visible{ border-color:var(--teal); color:var(--teal); outline:none; }
 
   /* ================= panels ================= */
   .panel{
@@ -266,9 +268,9 @@
     shadow-softness="0.85"
     loading="eager">
 
-  <div class="hint">Drag to rotate</div>
+  <button class="hint" id="recentreBtn">Recentre</button>
 
-  <div class="version" id="ver" title="Build version">1</div>
+  <div class="version" id="ver" title="Build version"></div>
 
   <!-- Markers are indicators only. Their text lives in CONTENT below, so it
        always appears in the panel and can never be clipped off screen. -->
@@ -310,9 +312,9 @@
 </model-viewer>
 
 <div class="bar">
-  <button class="pill" id="spinBtn" aria-pressed="false">Pause spin</button>
+  <button class="pill" id="spinOnBtn"  aria-pressed="true">Spin</button>
+  <button class="pill" id="spinOffBtn" aria-pressed="false">Pause</button>
   <button class="pill" id="helpBtn" data-primary>How to use</button>
-  <button class="pill" id="diagBtn">Network check</button>
 </div>
 
 <div class="panel" id="help" role="dialog" aria-label="How to use">
@@ -323,7 +325,8 @@
   <div class="kv"><span class="k">Zoom</span><span class="v">Pinch two fingers together or apart</span></div>
   <div class="kv"><span class="k">Read a part</span><span class="v">Tap a numbered circle, on the bone or in the panel</span></div>
   <div class="kv"><span class="k">Back to the start</span><span class="v">Tap the <em>i</em> button in the panel</span></div>
-  <div class="kv"><span class="k">Hold it still</span><span class="v">Tap <em>Pause spin</em> at the top right</span></div>
+  <div class="kv"><span class="k">Start / stop turning</span><span class="v">Tap <em>Spin</em> or <em>Pause</em> at the top right</span></div>
+  <div class="kv"><span class="k">Back to the opening view</span><span class="v">Tap <em>Recentre</em> at the top</span></div>
 
   <h3>Mouse</h3>
   <div class="kv"><span class="k">Rotate</span><span class="v">Left-click and drag</span></div>
@@ -337,23 +340,12 @@
   <div class="kv"><span class="k">Read a part</span><span class="v"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span></div>
   <div class="kv"><span class="k">Back to the start</span><span class="v"><kbd>I</kbd> or <kbd>Esc</kbd></span></div>
   <div class="kv"><span class="k">Reset the view</span><span class="v"><kbd>R</kbd></span></div>
-  <div class="kv"><span class="k">Spin on or off</span><span class="v"><kbd>S</kbd></span></div>
+  <div class="kv"><span class="k">Start / stop turning</span><span class="v"><kbd>S</kbd> toggles</span></div>
   <div class="kv"><span class="k">Free look</span><span class="v">Drag, scroll, or use the arrows at any time, even on a marker</span></div>
 
   <p class="foot">Choosing a numbered part turns the bone to face that feature
      and holds it still. <em>Pause spin</em> keeps it still permanently, which is
      useful when talking a class through one feature.</p>
-</div>
-
-<div class="panel" id="diag" role="dialog" aria-label="Network check">
-  <h2>Network check <button data-close aria-label="Close">&times;</button></h2>
-  <div class="row"><span class="name">This page</span><span class="res" data-s="pass">Pass</span></div>
-  <div class="row"><span class="name">3D viewer software</span><span class="res" data-s="wait" id="r1">Testing</span></div>
-  <div class="row"><span class="name">3D model file</span><span class="res" data-s="wait" id="r2">Testing</span></div>
-  <div class="row"><span class="name">poly.cam</span><span class="res" data-s="wait" id="r3">Testing</span></div>
-  <p class="foot">The top three must pass. The <strong>poly.cam</strong> row is
-     expected to fail on the school network, which is the problem we are
-     solving. Please screenshot this panel and send it back.</p>
 </div>
 
 <script>
@@ -369,8 +361,9 @@
          text:'One of two long side arms. They braced the spine against twisting and gave more muscle attachment along the flanks.' }
   };
 
-  const BUILD = { version: 1, note: 'spin lock, camera framing, mouse+keyboard help' };
+  const BUILD = { version: 5, note: 'Recentre button, discrete Spin/Pause buttons, network check removed from viewer' };
   document.getElementById('ver').title = `Build v${BUILD.version} — ${BUILD.note}`;
+  document.getElementById('ver').textContent = BUILD.version;
 
   const mv    = document.getElementById('mv');
   const pins  = [...document.querySelectorAll('.pin')];
@@ -378,12 +371,6 @@
   const bodyEl = document.getElementById('body');
   const headEl = document.getElementById('bodyHead');
   const textEl = document.getElementById('bodyText');
-
-  const setRes = (id, ok) => {
-    const el = document.getElementById(id); if (!el) return;
-    el.dataset.s = ok ? 'pass' : 'fail';
-    el.textContent = ok ? 'Pass' : 'Blocked';
-  };
 
   /* ---------------- camera framing ---------------------------------
      model-viewer places the camera at
@@ -422,17 +409,26 @@
   }
 
   /* ---------------- spin: auto pause, plus a teacher lock ----------- */
-  let spinAllowed = true;                 // the teacher toggle
-  const spinBtn = document.getElementById('spinBtn');
+  let spinAllowed = true;                 // the teacher control
+  const spinOnBtn  = document.getElementById('spinOnBtn');
+  const spinOffBtn = document.getElementById('spinOffBtn');
 
   function applySpin(){
-    // spin only when nothing is selected AND the teacher has not held it off
+    // Spin only when the teacher has it on AND nothing is selected. Selecting a
+    // marker holds the model still so the feature stays in view while read.
     const shouldSpin = spinAllowed && current === 'i';
     shouldSpin ? mv.setAttribute('auto-rotate','') : mv.removeAttribute('auto-rotate');
-    spinBtn.setAttribute('aria-pressed', String(!spinAllowed));
-    spinBtn.textContent = spinAllowed ? 'Pause spin' : 'Spin paused';
+    spinOnBtn.setAttribute('aria-pressed',  String(spinAllowed));
+    spinOffBtn.setAttribute('aria-pressed', String(!spinAllowed));
   }
-  spinBtn.addEventListener('click', () => { spinAllowed = !spinAllowed; applySpin(); });
+  // discrete on / off rather than one toggle, so the current state is always
+  // obvious rather than having to read the label to work out what it will do
+  spinOnBtn.addEventListener('click', () => {
+    spinAllowed = true;
+    if (current !== 'i') select('i');   // a marker was holding it still
+    else applySpin();
+  });
+  spinOffBtn.addEventListener('click', () => { spinAllowed = false; applySpin(); });
 
   /* ---------------- selection: chips, pins and panel in sync ------- */
   let current = 'i';
@@ -468,15 +464,16 @@
   }));
 
   /* ---------------- side panels ----------------------------------- */
-  const help = document.getElementById('help'), diag = document.getElementById('diag');
+  const help = document.getElementById('help');
   const bar  = document.querySelector('.bar');
-  const show = p => { help.removeAttribute('data-open'); diag.removeAttribute('data-open');
-                      p.setAttribute('data-open',''); bar.style.display='none'; };
-  const hideAll = () => { help.removeAttribute('data-open'); diag.removeAttribute('data-open');
-                          bar.style.display=''; };
-  document.getElementById('helpBtn').onclick = () => show(help);
-  document.getElementById('diagBtn').onclick = () => show(diag);
+  const show    = () => { help.setAttribute('data-open',''); bar.style.display='none'; };
+  const hideAll = () => { help.removeAttribute('data-open'); bar.style.display=''; };
+  document.getElementById('helpBtn').onclick = show;
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = hideAll);
+
+  /* ---------------- recentre ---------------------------------------
+     Returns the camera to the opening framing and clears any selection. */
+  document.getElementById('recentreBtn').addEventListener('click', () => select('i'));
 
   /* ---------------- keyboard --------------------------------------
      Written out explicitly so the on-screen list matches exactly. */
@@ -509,33 +506,13 @@
     e.preventDefault();
   });
 
-  applySpin();   // sets the button label and initial spin state
+  applySpin();   // sets the initial spin state and button highlighting
 
-  /* ---------------- fade the drag hint ---------------------------- */
-  mv.addEventListener('camera-change', e => {
-    if (e.detail.source === 'user-interaction') document.body.setAttribute('data-touched','');
-  }, { once:true });
-
-  /* ---------------- network check --------------------------------- */
-  const checkViewer = () => setRes('r1', !!customElements.get('model-viewer'));
-  customElements.get('model-viewer') ? checkViewer()
-    : customElements.whenDefined('model-viewer').then(checkViewer);
-  setTimeout(checkViewer, 8000);
-
-  mv.addEventListener('load',  () => setRes('r2', true));
+  /* ---------------- model load failure ----------------------------- */
   mv.addEventListener('error', () => {
-    setRes('r2', false);
-    textEl.textContent = 'The 3D model could not be loaded on this network.';
+    textEl.textContent = 'The 3D model could not be loaded.';
   });
 
-  (async () => {
-    const ctrl = new AbortController();
-    const bail = setTimeout(() => ctrl.abort(), 7000);
-    try {
-      await fetch('https://poly.cam/', { mode:'no-cors', cache:'no-store', signal:ctrl.signal });
-      clearTimeout(bail); setRes('r3', true);
-    } catch (_) { clearTimeout(bail); setRes('r3', false); }
-  })();
 </script>
 
 </body>
