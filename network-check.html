@@ -2,46 +2,33 @@
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Network check</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dolphin Vertebra</title>
 
 <!--
   ==========================================================================
-  NETWORK DIAGNOSTIC PAGE
+  SPECIMEN VIEWER — simple version
   ABM visual, July 2026
   ==========================================================================
-  Purpose only: prove the school network permits (a) this GitHub Pages
-  domain, (b) fetching a GitHub-hosted .glb file, (c) the model-viewer
-  library, and (d) WebGL on the device itself. Nothing else. No branding,
-  no instructions, no interaction beyond what proves the point.
+  One page per specimen. No annotations, no interface chrome. The model on
+  a plain background, turning by itself, draggable and zoomable.
 
-  poly.cam is deliberately not tested here, it is no longer part of the
-  delivery path.
+  Self-hosted. Nothing loads from poly.cam, no CDN, no fonts, no analytics,
+  no trackers, and no links that navigate away from this page.
 
-  Assets are shared with the main viewer one level up:
-      model-viewer.min.js
-      dolphin-vertebra.glb
+  For each new specimen, copy this file, change the src and the title.
   ==========================================================================
 -->
 
 <script type="module" src="model-viewer.min.js"></script>
 
 <style>
-  :root{
-    --pass:#3fb950;
-    --fail:#f85149;
-    --wait:#8b949e;
-    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas,
-            "Liberation Mono", monospace;
-  }
   *{ box-sizing:border-box; }
   html,body{
     margin:0; padding:0; height:100%;
-    background:#000; color:#fff;
-    font-family:var(--mono);
+    background:#000; overflow:hidden;
     -webkit-text-size-adjust:100%;
   }
-
   model-viewer{
     position:fixed; inset:0; width:100%; height:100%;
     background:#000;
@@ -49,36 +36,13 @@
     --progress-mask:transparent;
     --poster-color:transparent;
   }
-
-  .status{
-    position:fixed; top:36px; left:36px;
-    display:flex; flex-direction:column; gap:14px;
-  }
-  .line{ display:flex; flex-direction:column; gap:2px; }
-  .line .row{
-    display:inline-flex; align-items:baseline; gap:34px;
-    font-size:14px; letter-spacing:.04em;
-  }
-  .line .label{ color:#fff; white-space:nowrap; }
-  .line .state{ font-weight:700; letter-spacing:.08em; }
-  .state[data-s="wait"]{ color:var(--wait); }
-  .state[data-s="pass"]{ color:var(--pass); }
-  .state[data-s="fail"]{ color:var(--fail); }
-  .desc{ font-size:11px; letter-spacing:.02em; color:#6e7681; }
-
-  @media (max-width:520px){
-    .status{ top:22px; left:20px; }
-    .line .label{ gap:22px; font-size:13px; }
-    .desc{ font-size:10px; }
-  }
 </style>
 </head>
 <body>
 
 <model-viewer
-    id="mv"
     src="dolphin-vertebra.glb"
-    alt="A dolphin vertebra, rendered as an interactive diagnostic model"
+    alt="A dolphin vertebra collected from Henley Beach, shown as a rotatable 3D model"
     camera-orbit="42deg 78deg 1.75m"
     camera-target="0m 0.45m 0m"
     field-of-view="30deg"
@@ -94,62 +58,6 @@
     rotation-per-second="24deg"
     loading="eager">
 </model-viewer>
-
-<div class="status" id="status">
-  <div class="line">
-    <span class="row"><span class="label">LOCAL NETWORK</span><span class="state" data-s="pass">PASS</span></span>
-    <span class="desc">this method is compatible with the school's network</span>
-  </div>
-  <div class="line">
-    <span class="row"><span class="label">GITHUB CONNECTION</span><span class="state" data-s="wait" id="rConn">TESTING</span></span>
-    <span class="desc">the 3D model makes it to the Captur3d experience from the place it's hosted</span>
-  </div>
-  <div class="line">
-    <span class="row"><span class="label">3D VIEWER</span><span class="state" data-s="wait" id="rViewer">TESTING</span></span>
-    <span class="desc">the software that renders 3D models loaded</span>
-  </div>
-  <div class="line">
-    <span class="row"><span class="label">3D GRAPHICS (WEBGL)</span><span class="state" data-s="wait" id="rGl">TESTING</span></span>
-    <span class="desc">this device's graphics support, not the network</span>
-  </div>
-</div>
-
-<script>
-  const mv = document.getElementById('mv');
-  const set = (id, ok) => {
-    const el = document.getElementById(id); if (!el) return;
-    el.dataset.s = ok ? 'pass' : 'fail';
-    el.textContent = ok ? 'PASS' : 'BLOCKED';
-  };
-
-  // 3D VIEWER: did the custom element register at all
-  const checkViewer = () => set('rViewer', !!customElements.get('model-viewer'));
-  customElements.get('model-viewer') ? checkViewer()
-    : customElements.whenDefined('model-viewer').then(checkViewer);
-  setTimeout(checkViewer, 8000);
-
-  // GITHUB CONNECTION: the actual .glb fetch, via the viewer's own load path
-  mv.addEventListener('load',  () => set('rConn', true));
-  mv.addEventListener('error', () => set('rConn', false));
-
-  // 3D GRAPHICS (WEBGL): device/browser capability, not a network question,
-  // but a locked-down machine can fail here even with a clean network.
-  (() => {
-    try {
-      const c = document.createElement('canvas');
-      const gl = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
-      set('rGl', !!gl);
-    } catch (_) { set('rGl', false); }
-  })();
-</script>
-
-<!-- If the browser is old enough to ignore type="module" scripts entirely,
-     nothing above ever runs. This catches that case specifically. -->
-<script nomodule>
-  document.getElementById('status').innerHTML =
-    '<div class="line"><span class="label">JAVASCRIPT MODULES</span>' +
-    '<span class="state" data-s="fail">BLOCKED</span></div>';
-</script>
 
 </body>
 </html>
