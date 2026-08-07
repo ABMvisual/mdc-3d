@@ -15,15 +15,14 @@ html_template = """<!DOCTYPE html>
 </head>
 <body>
     <model-viewer 
-       src="{filename}" 
-    camera-controls 
-    auto-rotate 
-    rotation-per-second="30deg"
-    shadow-intensity="1" 
-    environment-image="neutral" 
-    exposure="1"
-    tabindex="0">
-        disable-zoom>
+       src="{filename}"
+        camera-controls
+        auto-rotate
+        rotation-per-second="30deg"
+        shadow-intensity="1"
+        environment-image="neutral"
+        exposure="1"
+        tabindex="0">
     </model-viewer>
 </body>
 </html>"""
