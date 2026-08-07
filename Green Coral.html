@@ -1,22 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Coral</title>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-    <style>
-        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; }
-        model-viewer { width: 100vw; height: 100vh; --poster-color: transparent; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Green Coral</title>
+
+<!--
+  ==========================================================================
+  SPECIMEN VIEWER  ·  ABM visual
+  ==========================================================================
+  Black background, model turning by itself, drag to rotate, pinch or scroll
+  to zoom, and one Pause / Spin button.
+
+  Self-hosted. model-viewer.min.js is loaded from this repo, NOT from a
+  Google CDN, which is what passed the school network test. Nothing loads
+  from poly.cam or any external domain.
+
+  To make a new specimen page: copy this file, change Green Coral and the
+  src="Green%20Coral.glb" line. Nothing else needs touching.
+  ==========================================================================
+-->
+
+<script type="module" src="model-viewer.min.js"></script>
+
+<style>
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:#000; overflow:hidden;
+    -webkit-text-size-adjust:100%;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  model-viewer{
+    position:fixed; inset:0; width:100%; height:100%;
+    background:#000;
+    --progress-bar-color:#3fb950;
+    --progress-mask:transparent;
+    --poster-color:transparent;
+  }
+
+  /* single Pause / Spin control, bottom centre, unobtrusive on black */
+  #spinBtn{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+    z-index:5; appearance:none; cursor:pointer;
+    font:inherit; font-size:12px; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase;
+    color:rgba(255,255,255,.72);
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:100px; padding:10px 22px;
+    backdrop-filter:blur(4px);
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  #spinBtn:hover, #spinBtn:focus-visible{
+    color:#fff; border-color:rgba(255,255,255,.4);
+    background:rgba(255,255,255,.1); outline:none;
+  }
+  @media (max-width:520px){
+    #spinBtn{ bottom:16px; font-size:11px; padding:9px 18px; }
+  }
+</style>
 </head>
 <body>
-    <model-viewer 
-        src="Green%20Coral.glb" 
-        auto-rotate 
-        rotation-per-second="30deg" 
-        camera-controls 
-        disable-zoom>
-    </model-viewer>
+
+<model-viewer
+    id="mv"
+    src="Green%20Coral.glb"
+    alt="Green Coral, an interactive 3D model"
+    camera-orbit="42deg 78deg 1.75m"
+    camera-target="0m 0.45m 0m"
+    field-of-view="30deg"
+    environment-image="neutral"
+    exposure="0.5"
+    tone-mapping="khronosPbrNeutral"
+    shadow-intensity="0.3"
+    shadow-softness="1"
+    camera-controls
+    interaction-prompt="none"
+    min-camera-orbit="auto auto 0.15m"
+    max-camera-orbit="auto auto 12m"
+    auto-rotate
+    auto-rotate-delay="1500"
+    rotation-per-second="24deg"
+    loading="eager">
+</model-viewer>
+
+<button id="spinBtn" aria-pressed="false">Pause</button>
+
+<script>
+  const mv  = document.getElementById('mv');
+  const btn = document.getElementById('spinBtn');
+  let paused = false;
+
+  function apply(){
+    if (paused){
+      mv.removeAttribute('auto-rotate');
+    } else {
+      // temporarily zero the resume delay so the button starts spin NOW,
+      // then restore the 1.5s grace period for drag-resume afterwards
+      mv.setAttribute('auto-rotate-delay','0');
+      mv.setAttribute('auto-rotate','');
+      requestAnimationFrame(() => mv.setAttribute('auto-rotate-delay','1500'));
+    }
+    btn.textContent = paused ? 'Spin' : 'Pause';
+    btn.setAttribute('aria-pressed', String(paused));
+  }
+  btn.addEventListener('click', () => { paused = !paused; apply(); });
+
+  /* model-viewer pauses auto-rotate on its own the moment someone drags or
+     zooms, and resumes shortly after they let go. auto-rotate-delay is 0 so
+     the Spin button responds immediately rather than sitting dead for a
+     few seconds before movement begins. */
+</script>
+
 </body>
 </html>

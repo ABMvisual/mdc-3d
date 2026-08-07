@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Dolphin Vertebra</title>
+<title>Dolphin Verterbrae</title>
 
 <!--
   ==========================================================================
@@ -16,7 +16,7 @@
   Google CDN, which is what passed the school network test. Nothing loads
   from poly.cam or any external domain.
 
-  To make a new specimen page: copy this file, change Dolphin Vertebra and the
+  To make a new specimen page: copy this file, change Dolphin Verterbrae and the
   src="Dolphin%20Verterbrae.glb" line. Nothing else needs touching.
   ==========================================================================
 -->
@@ -66,20 +66,21 @@
 <model-viewer
     id="mv"
     src="Dolphin%20Verterbrae.glb"
-    alt="Dolphin Vertebra, an interactive 3D model"
+    alt="Dolphin Verterbrae, an interactive 3D model"
     camera-orbit="42deg 78deg 1.75m"
     camera-target="0m 0.45m 0m"
     field-of-view="30deg"
     environment-image="neutral"
-    exposure="0.95"
-    shadow-intensity="0.7"
-    shadow-softness="0.75"
+    exposure="0.5"
+    tone-mapping="khronosPbrNeutral"
+    shadow-intensity="0.3"
+    shadow-softness="1"
     camera-controls
     interaction-prompt="none"
     min-camera-orbit="auto auto 0.15m"
     max-camera-orbit="auto auto 12m"
     auto-rotate
-    auto-rotate-delay="3000"
+    auto-rotate-delay="1500"
     rotation-per-second="24deg"
     loading="eager">
 </model-viewer>
@@ -92,16 +93,24 @@
   let paused = false;
 
   function apply(){
-    if (paused) mv.removeAttribute('auto-rotate');
-    else        mv.setAttribute('auto-rotate','');
+    if (paused){
+      mv.removeAttribute('auto-rotate');
+    } else {
+      // temporarily zero the resume delay so the button starts spin NOW,
+      // then restore the 1.5s grace period for drag-resume afterwards
+      mv.setAttribute('auto-rotate-delay','0');
+      mv.setAttribute('auto-rotate','');
+      requestAnimationFrame(() => mv.setAttribute('auto-rotate-delay','1500'));
+    }
     btn.textContent = paused ? 'Spin' : 'Pause';
     btn.setAttribute('aria-pressed', String(paused));
   }
   btn.addEventListener('click', () => { paused = !paused; apply(); });
 
-  /* With auto-rotate-delay set, model-viewer already pauses spin the moment
-     someone drags or zooms, then resumes on its own a few seconds after they
-     let go. The button is the explicit override on top of that. */
+  /* model-viewer pauses auto-rotate on its own the moment someone drags or
+     zooms, and resumes shortly after they let go. auto-rotate-delay is 0 so
+     the Spin button responds immediately rather than sitting dead for a
+     few seconds before movement begins. */
 </script>
 
 </body>
