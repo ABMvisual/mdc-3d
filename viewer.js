@@ -1,5 +1,11 @@
 /* ================================================================
    viewer.js  ·  ABM visual  ·  Marine Discovery Centre
+   ================================================================ */
+const VIEWER_VERSION = "v8";
+console.log(`%cMDC viewer ${VIEWER_VERSION}`, "color:#3fb950;font-weight:bold;font-size:14px");
+
+/* ================================================================
+   viewer.js  ·  ABM visual  ·  Marine Discovery Centre
    ----------------------------------------------------------------
    The ONE shared file. Every specimen page loads this. To change
    lighting, the spin button, zoom, colours or behaviour for ALL 50
@@ -15,7 +21,7 @@ const SETTINGS = {
   exposure:        "0.85",
   toneMapping:     "neutral",
   environment:     "neutral",
-  shadowIntensity: "0.35",
+  shadowIntensity: "0.2",
   shadowSoftness:  "1",
   cameraOrbit:     "42deg 78deg 1.75m",
   cameraTarget:    "0m 0.45m 0m",
@@ -24,7 +30,8 @@ const SETTINGS = {
   maxZoom:         "12m",
   rotationSpeed:   "24deg",
   resumeDelayMs:   1500,     // pause-before-spin-resumes after a drag
-  doubleSided:     true       // render both faces (fills Polycam's one-sided "holes")
+  doubleSided:     false,
+  emissiveFill:    0.18       // lifts deep pits so they read as soft shadow, not black
 };
 
 const model = document.body.dataset.model;
@@ -74,18 +81,20 @@ mv.setAttribute('rotation-per-second', SETTINGS.rotationSpeed);
 mv.setAttribute('loading', 'eager');
 document.body.appendChild(mv);
 
-/* ---- fill one-sided "holes" ----
-   Polycam meshes are single-sided, so model-viewer shows through the shell
-   where a polygon faces away, leaving dark gaps that aren't real holes.
-   Forcing every material double-sided draws both faces and matches how
-   Polycam's own viewer looks. No change to the GLB files is needed. */
+/* ---- lift deep pits ----
+   Some scanned areas are genuine craters. Under directional light their
+   floors go black, which reads as holes. A small emissive factor adds a
+   little self-illumination so those areas show their real (dark) texture
+   instead of pure black, matching how Polycam's flatter viewer looks.
+   No change to the GLB files is needed. */
 mv.addEventListener('load', () => {
-  if (!SETTINGS.doubleSided) return;
+  const e = SETTINGS.emissiveFill;
+  if (!e) return;
   try {
     for (const mat of mv.model.materials){
-      if (mat.setDoubleSided) mat.setDoubleSided(true);
+      if (mat.setEmissiveFactor) mat.setEmissiveFactor([e, e, e]);
     }
-  } catch (e) { /* older viewer without the API: silently skip */ }
+  } catch (err) { /* older viewer: skip */ }
 });
 
 /* ---- Pause / Spin button (instant) ---- */
