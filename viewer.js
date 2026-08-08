@@ -1,7 +1,7 @@
 /* ================================================================
    viewer.js  ·  ABM visual  ·  Marine Discovery Centre
    ================================================================ */
-const VIEWER_VERSION = "v8";
+const VIEWER_VERSION = "v9";
 console.log(`%cMDC viewer ${VIEWER_VERSION}`, "color:#3fb950;font-weight:bold;font-size:14px");
 
 /* ================================================================
@@ -21,7 +21,7 @@ const SETTINGS = {
   exposure:        "0.85",
   toneMapping:     "neutral",
   environment:     "neutral",
-  shadowIntensity: "0.2",
+  shadowIntensity: "0.35",
   shadowSoftness:  "1",
   cameraOrbit:     "42deg 78deg 1.75m",
   cameraTarget:    "0m 0.45m 0m",
@@ -31,7 +31,7 @@ const SETTINGS = {
   rotationSpeed:   "24deg",
   resumeDelayMs:   1500,     // pause-before-spin-resumes after a drag
   doubleSided:     false,
-  emissiveFill:    0.18       // lifts deep pits so they read as soft shadow, not black
+  emissiveFill:    0       // lifts deep pits so they read as soft shadow, not black
 };
 
 const model = document.body.dataset.model;
