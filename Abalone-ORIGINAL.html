@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abalone — original settings</title>
+<!-- The exact model-viewer settings from the network-check page Carmen tested,
+     with the status panel removed. Nothing else changed. -->
+<script type="module" src="model-viewer.min.js"></script>
+<style>
+  html,body{ margin:0; padding:0; height:100%; background:#000; }
+  model-viewer{ position:fixed; inset:0; width:100%; height:100%; background:#000; }
+</style>
+</head>
+<body>
+<model-viewer
+    id="mv"
+    src="Abalone.glb"
+    alt="Abalone"
+    camera-orbit="42deg 78deg 1.75m"
+    camera-target="0m 0.45m 0m"
+    field-of-view="30deg"
+    environment-image="neutral"
+    exposure="0.95"
+    shadow-intensity="0.7"
+    shadow-softness="0.75"
+    camera-controls
+    touch-action="none"
+    interaction-prompt="none"
+    auto-rotate
+    auto-rotate-delay="0"
+    rotation-per-second="24deg"
+    loading="eager">
+</model-viewer>
+</body>
+</html>

@@ -1,7 +1,7 @@
 /* ================================================================
    viewer.js  ·  ABM visual  ·  Marine Discovery Centre
    ================================================================ */
-const VIEWER_VERSION = "v9";
+const VIEWER_VERSION = "v10";
 console.log(`%cMDC viewer ${VIEWER_VERSION}`, "color:#3fb950;font-weight:bold;font-size:14px");
 
 /* ================================================================
@@ -23,9 +23,8 @@ const SETTINGS = {
   environment:     "neutral",
   shadowIntensity: "0.35",
   shadowSoftness:  "1",
-  cameraOrbit:     "42deg 78deg 1.75m",
-  cameraTarget:    "0m 0.45m 0m",
-  fieldOfView:     "30deg",
+  startAngle:      "42deg 78deg",   // direction only; distance is auto-framed per model
+  frameFill:       1.0,             // 1.0 = tightest fit that never clips. Lower = closer, risks clipping.
   minZoom:         "0.15m",
   maxZoom:         "12m",
   rotationSpeed:   "24deg",
@@ -63,9 +62,9 @@ const mv = document.createElement('model-viewer');
 mv.id = 'mv';
 mv.setAttribute('src', encodeURI(model));
 mv.setAttribute('alt', `${title}, an interactive 3D model`);
-mv.setAttribute('camera-orbit', SETTINGS.cameraOrbit);
-mv.setAttribute('camera-target', SETTINGS.cameraTarget);
-mv.setAttribute('field-of-view', SETTINGS.fieldOfView);
+mv.setAttribute('camera-orbit', SETTINGS.startAngle + ' auto');
+mv.setAttribute('camera-target', 'auto auto auto');
+mv.setAttribute('field-of-view', 'auto');
 mv.setAttribute('environment-image', SETTINGS.environment);
 mv.setAttribute('exposure', SETTINGS.exposure);
 mv.setAttribute('tone-mapping', SETTINGS.toneMapping);
@@ -80,6 +79,22 @@ mv.setAttribute('auto-rotate-delay', String(SETTINGS.resumeDelayMs));
 mv.setAttribute('rotation-per-second', SETTINGS.rotationSpeed);
 mv.setAttribute('loading', 'eager');
 document.body.appendChild(mv);
+
+/* ---- consistent framing ----
+   Every specimen is a different size and shape, so a fixed camera distance
+   makes some fill the screen and others sit tiny in the middle. Asking
+   model-viewer to auto-frame means each model is centred on its own bounding
+   box and sized to fit. frameFill can tighten that, but 1.0 is the closest
+   setting that never clips a model as it turns. */
+mv.addEventListener('load', () => {
+  if (!mv.updateFraming) return;
+  mv.updateFraming().then(() => {
+    const o = mv.getCameraOrbit();
+    const r = o.radius * (SETTINGS.frameFill || 1);
+    mv.cameraOrbit = `${o.theta}rad ${o.phi}rad ${r}m`;
+    mv.jumpCameraToGoal();
+  }).catch(() => {});
+});
 
 /* ---- lift deep pits ----
    Some scanned areas are genuine craters. Under directional light their
